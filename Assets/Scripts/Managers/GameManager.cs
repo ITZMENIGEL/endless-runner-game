@@ -8,6 +8,10 @@ public class GameManager : MonoBehaviour
     private int currentScore = 0;
     private int coinsCollected = 0;
     private bool isGameActive = true;
+    private bool hasShield = false;
+    private float distanceTraveled = 0f;
+    private PlayerController player;
+    private UIManager uiManager;
     
     private void Awake()
     {
@@ -24,6 +28,17 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         currentScore = startingScore;
+        player = FindObjectOfType<PlayerController>();
+        uiManager = FindObjectOfType<UIManager>();
+    }
+    
+    private void Update()
+    {
+        if (isGameActive && player != null)
+        {
+            distanceTraveled += player.GetComponent<Rigidbody>().velocity.z * Time.deltaTime;
+            currentScore = Mathf.Max(currentScore, (int)(distanceTraveled / 10));
+        }
     }
     
     public void AddScore(int amount)
@@ -40,13 +55,37 @@ public class GameManager : MonoBehaviour
         AddScore(10);
     }
     
+    public void ActivateShield()
+    {
+        hasShield = true;
+        if (uiManager != null)
+        {
+            uiManager.ShowShieldActive();
+        }
+    }
+    
+    public bool HasShield()
+    {
+        return hasShield;
+    }
+    
+    public void RemoveShield()
+    {
+        hasShield = false;
+    }
+    
     public void GameOver()
     {
         isGameActive = false;
-        Debug.Log("Game Over! Final Score: " + currentScore);
+        Time.timeScale = 0f;
+        if (uiManager != null)
+        {
+            uiManager.ShowGameOver();
+        }
     }
     
     public int GetScore() => currentScore;
     public int GetCoins() => coinsCollected;
     public bool IsGameActive() => isGameActive;
+    public float GetDistance() => distanceTraveled;
 }

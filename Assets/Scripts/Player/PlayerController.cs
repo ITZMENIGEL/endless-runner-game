@@ -4,30 +4,42 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float laneWidth = 1.5f;
-    [SerializeField] private float jumpForce = 5f;
+    [SerializeField] private float jumpForce = 8f;
     [SerializeField] private float groundDrag = 5f;
     [SerializeField] private float airDrag = 1f;
+    [SerializeField] private float groundDrag2 = 10f;
     
     private Rigidbody rb;
     private int currentLane = 1; // 0 = left, 1 = center, 2 = right
     private bool isGrounded = true;
     private Vector3 targetPosition;
+    private bool isSliding = false;
+    private float slideDuration = 0.5f;
+    private float slideTimer = 0f;
+    private Vector3 originalScale;
+    private GameManager gameManager;
     
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        gameManager = GameManager.Instance;
         targetPosition = transform.position;
+        originalScale = transform.localScale;
     }
     
     private void Update()
     {
+        if (!gameManager.IsGameActive()) return;
+        
         HandleInput();
         UpdateDrag();
         RotatePlayer();
+        UpdateSlide();
     }
     
     private void FixedUpdate()
     {
+        if (!gameManager.IsGameActive()) return;
         MovePlayer();
     }
     
@@ -47,6 +59,12 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             Jump();
+        }
+        
+        // Slide input
+        if (Input.GetKeyDown(KeyCode.LeftControl) && isGrounded && !isSliding)
+        {
+            StartSlide();
         }
     }
     
@@ -85,6 +103,26 @@ public class PlayerController : MonoBehaviour
         isGrounded = false;
     }
     
+    private void StartSlide()
+    {
+        isSliding = true;
+        slideTimer = 0f;
+        transform.localScale = new Vector3(originalScale.x, originalScale.y * 0.5f, originalScale.z);
+    }
+    
+    private void UpdateSlide()
+    {
+        if (isSliding)
+        {
+            slideTimer += Time.deltaTime;
+            if (slideTimer >= slideDuration)
+            {
+                isSliding = false;
+                transform.localScale = originalScale;
+            }
+        }
+    }
+    
     private void UpdateDrag()
     {
         rb.drag = isGrounded ? groundDrag : airDrag;
@@ -107,6 +145,20 @@ public class PlayerController : MonoBehaviour
         {
             isGrounded = true;
         }
+        
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            if (!isSliding)
+            {
+                gameManager.GameOver();
+                GetComponent<Rigidbody>().velocity = Vector3.zero;
+            }
+            else
+            {
+                Destroy(collision.gameObject);
+                gameManager.AddScore(25);
+            }
+        }
     }
     
     private void OnCollisionExit(Collision collision)
@@ -114,6 +166,21 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = false;
+        }
+    }
+    
+    private void OnTriggerEnter(Collider collision)
+    {
+        if (collision.CompareTag("Coin"))
+        {
+            gameManager.CollectCoin();
+            Destroy(collision.gameObject);
+        }
+        
+        if (collision.CompareTag("PowerUp"))
+        {
+            gameManager.ActivateShield();
+            Destroy(collision.gameObject);
         }
     }
 }
