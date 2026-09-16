@@ -1,22 +1,25 @@
 using UnityEngine;
-using TMPro;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI scoreText;
-    [SerializeField] private TextMeshProUGUI coinText;
-    [SerializeField] private TextMeshProUGUI distanceText;
-    [SerializeField] private TextMeshProUGUI shieldText;
+    [SerializeField] private Text scoreText;
+    [SerializeField] private Text coinText;
+    [SerializeField] private Text distanceText;
+    [SerializeField] private Text shieldText;
     [SerializeField] private GameObject gameOverPanel;
-    [SerializeField] private TextMeshProUGUI finalScoreText;
-    [SerializeField] private TextMeshProUGUI finalCoinsText;
+    [SerializeField] private Text finalScoreText;
+    [SerializeField] private Text finalCoinsText;
     
     private GameManager gameManager;
     
     private void Start()
     {
         gameManager = GameManager.Instance;
-        gameOverPanel.SetActive(false);
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
     }
     
     private void Update()
@@ -62,7 +65,10 @@ public class UIManager : MonoBehaviour
     
     public void ShowGameOver()
     {
-        gameOverPanel.SetActive(true);
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+        }
         if (finalScoreText != null)
         {
             finalScoreText.text = "Final Score: " + gameManager.GetScore();
